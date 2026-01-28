@@ -8,11 +8,12 @@ class Simulator
 {
     UTXOManager utxo_manager;
     Mempool mempool;
-
+    double gas_fee;
 public:
-    Simulator() 
+    Simulator(double gas_fee = 0.0, int mempool_maxsize = 50) 
     {
-        // Initial State (Genesis UTXOs)
+        this->gas_fee = gas_fee;
+        mempool = Mempool(mempool_maxsize);
         utxo_manager.add_utxo("genesis", 0, 50.0, "Alice");
         utxo_manager.add_utxo("genesis", 1, 30.0, "Bob");
         utxo_manager.add_utxo("genesis", 2, 20.0, "Charlie");
@@ -52,9 +53,9 @@ public:
         tx.tx_id = "tx_" + sender + "_" + recipient + "_" + to_string(rand() % 1000);
         
         double total_input = 0;
-        double fee = 0.001; //hardcoded fee for now
 
-        for (const auto& utxo : sender_utxos) 
+
+        for(const auto& utxo : sender_utxos) 
         {
             //double spend in same transaction
             if(mempool.spent_utxos.count({utxo.tx_id, utxo.index}))
@@ -64,7 +65,7 @@ public:
             total_input += utxo.amount;
             
             //dont have to use all utxos
-            if (total_input >= amount + fee) 
+            if (total_input >= amount*(1 + gas_fee)) 
             break; 
         }
         
@@ -74,7 +75,7 @@ public:
             cout << "Error: All available UTXOs are already pending in mempool." << endl;
             return;
         }
-        else if(total_input + epsilon < amount + fee)
+        else if(total_input + epsilon < amount*(1+gas_fee))
         {
             //cant pay fee
             cout << "Error: Insufficient funds for fee." << endl;
@@ -83,7 +84,7 @@ public:
 
         tx.outputs.push_back({amount, recipient});
 
-        double change = total_input - amount - fee;
+        double change = total_input - amount*(1+gas_fee);
         if(abs(change) < epsilon)
             change = 0;
             
