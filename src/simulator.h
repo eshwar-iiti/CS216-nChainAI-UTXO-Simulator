@@ -21,6 +21,8 @@ public:
         utxo_manager.add_utxo("genesis", 4, 5.0, "Eve");
     }
 
+    void run_test_scenarios();
+
     void create_transaction_ui() 
     {
         string sender, recipient;
